@@ -45,11 +45,32 @@ class VideoApiHandler {
     }
   }
   
-  static String getDetailedErrorMessage(dynamic error) {
+  static String getDetailedErrorMessage(dynamic error, {String? responseBody}) {
     if (error is Vimeo410Exception) {
       return 'The video links have expired. Please refresh the video to get new links.';
     } else if (error is FormatException && error.message.contains('HTML instead of JSON')) {
       return 'Vimeo returned an unexpected HTML response. This usually indicates a server issue or that the video is unavailable.';
+    } else if (error is FormatException && error.toString().contains('Unexpected character')) {
+      // Enhanced logging for HTML response errors
+      debugPrint('===== VIMEO API ERROR: FormatException: Unexpected character (at character 1)');
+      debugPrint('<!DOCTYPE html>');
+      debugPrint('^');
+      debugPrint(' ==========');
+      debugPrint('Error Details: $error');
+      
+      // Print the full HTML response if available
+      if (responseBody != null) {
+        debugPrint('===== FULL HTML RESPONSE =====');
+        if (responseBody.length > 2000) {
+          debugPrint('HTML Response (first 2000 chars): ${responseBody.substring(0, 2000)}...');
+        } else {
+          debugPrint('HTML Response: $responseBody');
+        }
+        debugPrint('===== END OF HTML RESPONSE =====');
+      }
+      
+      debugPrint('===== End of Error Details =====');
+      return 'Vimeo API returned HTML instead of JSON. This usually means the video is unavailable or there\'s a server issue.';
     } else if (error.toString().contains('403 Forbidden')) {
       return 'Access denied. The video may be private or restricted.';
     } else if (error.toString().contains('XMLHttpRequest')) {
